@@ -2,7 +2,6 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
-#include <algorithm>
 
 using namespace std;
 
@@ -42,54 +41,60 @@ FaceDetector::FaceDetector(const string& cascade_path) {
     cout << "Cascade classifier loaded successfully" << endl;
 }
 
-void FaceDetector::processDirectory(const string& input_dir,
-                                    const string& output_base_dir,
-                                    bool show_progress) {
-    namespace fs = filesystem;
-    
-    vector<fs::path> jpegs;
-    try {
-        for (const auto& entry : fs::directory_iterator(input_dir)) {
-            string ext = entry.path().extension().string();
-            if (ext == ".jpg" || ext == ".jpeg" || ext == ".JPG" || ext == ".JPEG") {
-                jpegs.push_back(entry.path());
-            }
-        }
-    } catch (const fs::filesystem_error& e) {
-        cerr << "Error: Could not open directory " << input_dir << endl;
-        return;
-    }
-    
-    sort(jpegs.begin(), jpegs.end());
-
-    if (jpegs.empty()) {
-        cerr << "Error: No JPEG files found in " << input_dir << endl;
+void FaceDetector::processVideo(const string& input_video,
+                                const string& output_base_dir,
+                                int target_fps,
+                                bool show_progress) {
+    cv::VideoCapture cap(input_video);
+    if (!cap.isOpened()) {
+        cerr << "Error: Could not open video " << input_video << endl;
         return;
     }
 
-    cout << "Found " << jpegs.size() << " frames to process" << endl;
+    double fps = cap.get(cv::CAP_PROP_FPS);
+    int frame_count = static_cast<int>(cap.get(cv::CAP_PROP_FRAME_COUNT));
     
-    cv::Mat first_frame = cv::imread(jpegs[0].string(), cv::IMREAD_COLOR);
-    if (!first_frame.empty()) {
-        cout << "Frame dimensions: " << first_frame.cols << "x" 
-                  << first_frame.rows << endl;
-    }
+    cout << "Video FPS: " << fps << endl;
+    cout << "Video Total Frames: " << frame_count << endl;
 
-    cout << "Processing frames..." << endl;
-    ProgressBar bar(jpegs.size());
+    int skip_frames = 1;
+    if (target_fps > 0 && target_fps < fps) {
+        skip_frames = static_cast<int>(fps / target_fps);
+    }
+    cout << "Target FPS: " << target_fps << ", extracting every " << skip_frames << " frame(s)." << endl;
+
+    int estimated_frames_to_process = frame_count / skip_frames;
+    cout << "Processing roughly " << estimated_frames_to_process << " frames..." << endl;
+
+    ProgressBar bar(estimated_frames_to_process);
     
     int faces_found_total = 0;
     int frames_with_faces = 0;
+    int current_frame_idx = 0;
+    int processed_frames_count = 0;
 
-    for (const auto& jpeg_path : jpegs) {
-        cv::Mat frame = cv::imread(jpeg_path.string(), cv::IMREAD_COLOR);
-        if (frame.empty()) {
-            if (show_progress) bar.update();
+    cv::Mat frame;
+    while (cap.read(frame)) {
+        if (current_frame_idx % skip_frames != 0) {
+            current_frame_idx++;
             continue;
         }
 
+        // Resize to 640x640 with aspect ratio preservation to mimic bash script behavior
+        // (For simplicity we just resize to a fixed square or pad, here we just do standard resize for the face detection input)
+        cv::Mat resized_frame;
+        // In the bash script, videoscale add-borders=true is used. 
+        // We'll pad it to square to replicate the 640x640 aspect ratio preservation:
+        int max_dim = max(frame.cols, frame.rows);
+        cv::Mat square_frame = cv::Mat::zeros(max_dim, max_dim, frame.type());
+        int dx = (max_dim - frame.cols) / 2;
+        int dy = (max_dim - frame.rows) / 2;
+        frame.copyTo(square_frame(cv::Rect(dx, dy, frame.cols, frame.rows)));
+        
+        cv::resize(square_frame, resized_frame, cv::Size(640, 640));
+
         cv::Mat gray;
-        cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+        cv::cvtColor(resized_frame, gray, cv::COLOR_BGR2GRAY);
         cv::equalizeHist(gray, gray);
 
         vector<cv::Rect> faces;
@@ -100,25 +105,13 @@ void FaceDetector::processDirectory(const string& input_dir,
         if (!faces.empty()) {
             frames_with_faces++;
             faces_found_total += faces.size();
-            
-            string stem = jpeg_path.stem().string();
-            int frame_num = 0;
-            string digits;
-            for (char c : stem) {
-                if (isdigit(c)) digits += c;
-            }
-            if (!digits.empty()) {
-                try {
-                    frame_num = stoi(digits);
-                } catch (...) {
-                    frame_num = bar.getCurrent();
-                }
-            }
-            
-            saveFaces(frame, faces, frame_num, output_base_dir);
+            // Use current_frame_idx as the frame number for output file naming
+            saveFaces(resized_frame, faces, current_frame_idx, output_base_dir);
         }
 
         if (show_progress) bar.update();
+        processed_frames_count++;
+        current_frame_idx++;
     }
     
     if (show_progress) bar.finish();
@@ -126,7 +119,7 @@ void FaceDetector::processDirectory(const string& input_dir,
     cout << "\n=========================================" << endl;
     cout << "Processing Complete!" << endl;
     cout << "=========================================" << endl;
-    cout << "Total frames processed: " << jpegs.size() << endl;
+    cout << "Total frames processed: " << processed_frames_count << endl;
     cout << "Frames with faces: " << frames_with_faces << endl;
     cout << "Total faces detected: " << faces_found_total << endl;
     cout << "Output directory: " << output_base_dir << endl;

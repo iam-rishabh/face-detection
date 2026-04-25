@@ -1,3 +1,20 @@
-#generated files
-frames_dir/
-/decoupled_detector/build/
+# Build directories
+build/
+*/build/
+
+# Output directories
+jpeg_frames/
+detected_faces/
+in_memory_detected_faces/
+decoupled_detector/jpeg_frames/
+decoupled_detector/detected_faces/
+in_memory_detector/in_memory_detected_faces/
+in_memory_detector/test_output/
+test_outputs_in_memory_redundant/
+test_output/
+
+# Test generated files
+test_video.mp4
+
+# OS generated files
+.DS_Store

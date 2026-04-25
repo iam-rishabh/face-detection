@@ -10,9 +10,11 @@ class FaceDetector {
 public:
     FaceDetector(const string& cascade_path);
     
-    void processDirectory(const string& input_dir,
-                          const string& output_base_dir,
-                          bool progress = true);
+    // Process a video file directly from disk without creating intermediate files
+    void processVideo(const string& input_video,
+                      const string& output_base_dir,
+                      int target_fps = 3,
+                      bool progress = true);
 private:
     cv::CascadeClassifier cascade_;
     

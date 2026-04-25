@@ -1,7 +1,24 @@
 #!/bin/bash
 INPUT=${1:?"Usage: $0 <input.mp4>"}
 OUTDIR=${2:-"jpeg_frames"}
+if [[ "$OUTDIR" != /* ]] && [[ "$OUTDIR" != *"decoupled_detector"* ]]; then
+    OUTDIR="decoupled_detector/$OUTDIR"
+fi
 FPS=${3:-3}
+if [ ! -f "$INPUT" ]; then
+    echo "Error: Input video '$INPUT' not found."
+    exit 1
+fi
+
+if ! command -v gst-launch-1.0 &> /dev/null; then
+    echo "Error: gst-launch-1.0 could not be found. Please install gstreamer1.0-tools."
+    exit 1
+fi
+
+if ! command -v identify &> /dev/null; then
+    echo "Error: identify could not be found. Please install imagemagick."
+    exit 1
+fi
 
 mkdir -p "$OUTDIR"
 

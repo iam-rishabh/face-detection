@@ -6,17 +6,17 @@ using namespace std;
 
 int main(int argc, char** argv) {
     cout << "=========================================" << endl;
-    cout << "Face Detection Tool (Decoupled CPU Mode)" << endl;
+    cout << "Face Detection Tool (In-Memory Video Mode)" << endl;
     cout << "=========================================" << endl;
     
     if (argc < 3) {
         cerr << "Usage: " << argv[0] 
-                  << " <input_jpeg_dir> <output_dir> [cascade_xml]\n\n"
+                  << " <input_video.mp4> <output_dir> [cascade_xml]\n\n"
                   << "Example:\n"
                   << "  " << argv[0] 
-                  << " jpeg_frames detected_faces\n"
+                  << " video1.mp4 detected_faces\n"
                   << "  " << argv[0] 
-                  << " jpeg_frames output /path/to/cascade.xml\n";
+                  << " video1.mp4 output /path/to/cascade.xml\n";
         return 1;
     }
     
@@ -48,18 +48,19 @@ int main(int argc, char** argv) {
     }
     
     string final_output = output;
-    if (output.find("decoupled_detector") == string::npos && output.front() != '/') {
-        final_output = "decoupled_detector/" + output;
+    if (output.find("in_memory_detector") == string::npos && output.front() != '/') {
+        final_output = "in_memory_detector/" + output;
     }
 
-    cout << "Input directory: " << input << endl;
+    cout << "Input Video: " << input << endl;
     cout << "Output directory: " << final_output << endl;
     cout << "Cascade file: " << cascade << endl;
     cout << "=========================================" << endl;
     
     try {
         FaceDetector detector(cascade);
-        detector.processDirectory(input, final_output, true);
+        // Process the video at 3 FPS target by default
+        detector.processVideo(input, final_output, 3, true);
         return 0;
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
