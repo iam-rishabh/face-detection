@@ -47,19 +47,24 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    string final_input = input;
+    if (input.find("decoupled_detector") == string::npos && input.front() != '/') {
+        final_input = "decoupled_detector/" + input;
+    }
+
     string final_output = output;
     if (output.find("decoupled_detector") == string::npos && output.front() != '/') {
         final_output = "decoupled_detector/" + output;
     }
 
-    cout << "Input directory: " << input << endl;
+    cout << "Input directory: " << final_input << endl;
     cout << "Output directory: " << final_output << endl;
     cout << "Cascade file: " << cascade << endl;
     cout << "=========================================" << endl;
     
     try {
         FaceDetector detector(cascade);
-        detector.processDirectory(input, final_output, true);
+        detector.processDirectory(final_input, final_output, true);
         return 0;
     } catch (const exception& e) {
         cerr << "Error: " << e.what() << endl;
