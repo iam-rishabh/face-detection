@@ -16,9 +16,18 @@ protected:
     void SetUp() override {
         // Try to find a valid cascade path
         vector<string> paths = {
+#ifdef _WIN32
+            "C:/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+            "C:/tools/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+#elif defined(__APPLE__)
+            "/opt/homebrew/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/Cellar/opencv/*/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#else
             "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#endif
             "haarcascade_frontalface_default.xml"
         };
         for (const auto& p : paths) {
@@ -36,7 +45,8 @@ protected:
             filesystem::create_directories(test_in_dir);
             cv::Mat frame = cv::Mat::zeros(640, 640, CV_8UC3);
             cv::rectangle(frame, cv::Point(200, 200), cv::Point(400, 400), cv::Scalar(255, 255, 255), -1);
-            cv::imwrite(test_in_dir + "/frame_000001.jpg", frame);
+            filesystem::path frame_path = filesystem::path(test_in_dir) / "frame_000001.jpg";
+            cv::imwrite(frame_path.string(), frame);
         }
     }
 

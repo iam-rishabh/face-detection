@@ -16,9 +16,18 @@ protected:
     void SetUp() override {
         // Try to find a valid cascade path
         vector<string> paths = {
+#ifdef _WIN32
+            "C:/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+            "C:/tools/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+#elif defined(__APPLE__)
+            "/opt/homebrew/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/Cellar/opencv/*/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#else
             "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#endif
             "haarcascade_frontalface_default.xml"
         };
         for (const auto& p : paths) {

@@ -138,12 +138,12 @@ void FaceDetector::saveFaces(const cv::Mat& frame,
                              const string& out_base) {
     namespace fs = filesystem;
     
-    ostringstream dir_name;
-    dir_name << out_base << "/frame_" 
-             << setw(6) << setfill('0') << frame_num;
+    ostringstream frame_suffix;
+    frame_suffix << "frame_" << setw(6) << setfill('0') << frame_num;
+    fs::path dir_path = fs::path(out_base) / frame_suffix.str();
              
     try {
-        fs::create_directories(dir_name.str());
+        fs::create_directories(dir_path);
     } catch (const fs::filesystem_error& e) {
         cerr << "Error: Could not create output directory: " << e.what() << endl;
         return;
@@ -164,12 +164,12 @@ void FaceDetector::saveFaces(const cv::Mat& frame,
             continue;
         }
         
-        ostringstream fname;
-        fname << dir_name.str() << "/face_" 
-              << setw(4) << setfill('0') << count << ".jpeg";
+        ostringstream face_name;
+        face_name << "face_" << setw(4) << setfill('0') << count << ".jpeg";
+        fs::path face_path = dir_path / face_name.str();
         
-        if (!cv::imwrite(fname.str(), face_roi)) {
-            cerr << "Error: Failed to save face image to " << fname.str() << endl;
+        if (!cv::imwrite(face_path.string(), face_roi)) {
+            cerr << "Error: Failed to save face image to " << face_path.string() << endl;
         }
         count++;
     }

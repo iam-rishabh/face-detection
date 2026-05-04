@@ -1,6 +1,7 @@
 #include "FaceDetector.hpp"
 #include <iostream>
 #include <cstdlib>
+#include <filesystem>
 
 using namespace std;
 
@@ -28,9 +29,18 @@ int main(int argc, char** argv) {
         cascade = argv[3];
     } else {
         vector<string> paths = {
+#ifdef _WIN32
+            "C:/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+            "C:/tools/opencv/etc/haarcascades/haarcascade_frontalface_default.xml",
+#elif defined(__APPLE__)
+            "/opt/homebrew/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+            "/usr/local/Cellar/opencv/*/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#else
             "/usr/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/share/opencv/haarcascades/haarcascade_frontalface_default.xml",
             "/usr/local/share/opencv4/haarcascades/haarcascade_frontalface_default.xml",
+#endif
             "haarcascade_frontalface_default.xml"
         };
         for (const auto& p : paths) {
@@ -47,9 +57,11 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    namespace fs = filesystem;
+
     string final_output = output;
-    if (output.find("in_memory_detector") == string::npos && output.front() != '/') {
-        final_output = "in_memory_detector/" + output;
+    if (output.find("in_memory_detector") == string::npos && !fs::path(output).is_absolute()) {
+        final_output = (fs::path("in_memory_detector") / output).string();
     }
 
     cout << "Input Video: " << input << endl;
